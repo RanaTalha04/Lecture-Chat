@@ -1,43 +1,224 @@
 # Lecture Chat
 
-Ask questions about PDFs you upload. The application splits PDFs into passages, embeds them locally with ChromaDB's lightweight ONNX embedding model, stores the vectors in ChromaDB, retrieves the best matches for a question, and asks Groq to write an answer grounded only in those passages. Each response includes the source text and page number.
+This is the first version of Lecture Chat, and it is specifically designed for PDF documents.
 
-## Run locally
+Lecture Chat is a lightweight local RAG application that lets you upload lecture PDFs, split them into searchable chunks, embed the text, and ask questions about the content. The app retrieves the most relevant passages and, when a Groq API key is configured, generates answers grounded in those passages.
 
-1. Install dependencies with `uv sync` (or `pip install -r requirements.txt`).
-2. Copy `.env.example` to `.env` and set `GROQ_API_KEY`. The key is optional: without it, the application still searches and shows relevant passages.
-3. Start the application with `uv run python main.py`.
-4. Open http://localhost:8000. The first question downloads the embedding model and builds the search index, so it may take a little longer.
+## Overview
 
-From the UI, upload your own PDFs and choose **Rebuild search index** to include them. Uploaded files are stored locally in `uploads/`; the generated ChromaDB index is in `storage/`.
+This project is built for quick local experimentation and personal study workflows. It is especially useful for:
 
-## Project structure
+- uploading lecture notes and study materials in PDF format
+- asking natural-language questions about the content
+- checking the exact passages and page numbers that support the answer
+- running the app locally without a heavy external service for indexing
+
+## Current Scope
+
+- First release / version 1.0
+- PDF-only support
+- Local file storage for uploaded PDFs
+- Local vector database using ChromaDB
+- FastAPI backend with a simple browser frontend
+- Optional AI answer generation using Groq
+
+> This first version is intentionally focused on PDFs. Other document types such as DOCX, PPTX, or TXT are not part of this release.
+
+## Features
+
+- Upload one or more PDF files through the web interface
+- Rebuild the local search index from all PDF files in the uploads folder
+- Split document text into chunked passages for more precise retrieval
+- Search for relevant sections using vector similarity
+- Return source metadata including file name and page number
+- Generate answers from retrieved context with Groq when configured
+- Expose the app through a simple REST API
+
+## Tech Stack
+
+- Python
+- FastAPI
+- ChromaDB
+- LangChain
+- PyMuPDF / PyPDF
+- Groq API
+- HTML, CSS, and JavaScript for the frontend
+
+## Project Structure
 
 ```text
-src/
-  api/          FastAPI app and HTTP routes
-  ingestion/    PDF loader
-  chunking/     Text splitter
-  rag/          Indexing, retrieval, and Groq answer generation
-static/         Browser frontend (HTML, CSS, JavaScript)
-uploads/        Your PDFs (local runtime data; not committed)
-storage/        Generated ChromaDB index (local runtime data; not committed)
+.
+├── main.py                  # Starts the app
+├── requirements.txt         # Python dependencies
+├── pyproject.toml           # Project metadata and config
+├── Dockerfile               # Container build file
+├── render.yaml              # Render deployment config
+├── README.md                # Project documentation
+├── uploads/                 # Uploaded PDF files
+├── storage/                 # Persistent local ChromaDB index
+├── logs/                    # Runtime logs
+├── static/                  # Frontend assets
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
+└── src/
+    ├── api/
+    │   ├── app.py
+    │   └── routes.py
+    ├── chunking/
+    │   └── chunker.py
+    ├── ingestion/
+    │   └── loader.py
+    ├── rag/
+    │   └── service.py
+    ├── exception.py
+    ├── logger.py
+    └── __init__.py
 ```
 
-## API
+## Prerequisites
 
-- `GET /api/health` — number of PDFs and indexed chunks.
-- `POST /api/chat` — JSON: `{"question": "...", "top_k": 4}`.
-- `POST /api/documents` — multipart field: `file` (PDF only).
-- `POST /api/reindex` — rebuilds the local Chroma collection.
-- `GET /docs` — interactive FastAPI documentation.
+Before running the app, make sure you have:
 
-## Deploy
+- Python 3.10+ recommended
+- pip or uv installed
+- access to a Groq API key if you want AI-generated answers
 
-The included `Dockerfile` runs the complete application and reads the host-provided `PORT`. `render.yaml` lets Render detect it as a Docker web service.
+## Installation
 
-1. Push this repository to GitHub and create a new Render Blueprint from the repository.
-2. Enter `GROQ_API_KEY` as the secret environment variable during setup; do not commit `.env`.
-3. Deploy and open the service URL. Test `/api/health`, then ask a question in the UI.
+1. Clone the repository:
 
-The free Render filesystem is ephemeral: uploaded PDFs and the generated Chroma index disappear after a redeploy or restart. For persistent uploads, attach a persistent disk or move PDFs and the vector database to managed storage before using this in production.
+```bash
+git clone <repo-url>
+cd lecture-chat
+```
+
+2. Create a virtual environment (optional but recommended):
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+3. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Alternatively, if you use uv:
+
+```bash
+uv sync
+```
+
+4. Create a `.env` file in the project root and add the following:
+
+```env
+GROQ_API_KEY=your_api_key_here
+GROQ_MODEL=openai/gpt-oss-20b
+PORT=8000
+```
+
+The `GROQ_API_KEY` is optional. Without it, the app can still index PDFs and display the passages that match a question, but it will not generate a synthesized answer.
+
+## Running the App Locally
+
+Start the application:
+
+```bash
+python main.py
+```
+
+Then open:
+
+```text
+http://localhost:8000
+```
+
+The first time you query the app, it may take longer to build the embedding index and download required resources.
+
+## Using the Application
+
+1. Open the web interface.
+2. Upload a PDF file.
+3. Rebuild the search index if needed.
+4. Ask a question in natural language.
+5. Review the matching passages and page references returned by the app.
+
+The uploaded PDF is stored under `uploads/`, and the generated vector store is stored under `storage/chroma`.
+
+## API Endpoints
+
+The app exposes a REST API for programmatic use.
+
+- `GET /api/health` — returns app health and document statistics
+- `POST /api/chat` — ask a question
+  - request body example:
+
+```json
+{
+  "question": "What is the main idea of this lecture?",
+  "top_k": 4
+}
+```
+
+- `POST /api/documents` — upload a PDF file
+- `POST /api/reindex` — rebuild the vector index from all PDFs in the uploads folder
+- `GET /docs` — interactive Swagger UI generated by FastAPI
+
+## How the App Works
+
+1. A PDF is uploaded and saved in the local `uploads/` folder.
+2. The PDF text is extracted and split into manageable chunks.
+3. Chunks are embedded and stored in ChromaDB.
+4. A user question is converted into a vector and compared against the stored chunks.
+5. The most relevant chunks are returned as sources.
+6. If a Groq API key is present, the model answers based only on those retrieved passages.
+
+## Deployment
+
+This repository includes a Dockerfile and a Render configuration for deployment.
+
+### Docker
+
+```bash
+docker build -t lecture-chat .
+docker run -p 8000:8000 -e PORT=8000 -e GROQ_API_KEY=your_key lecture-chat
+```
+
+### Render
+
+The included `render.yaml` is configured for a Docker-based web service.
+
+The current deployment is running on Render at:
+
+https://lecture-chat.onrender.com/
+
+This is the current hosting setup for this first version, but it may later be moved to a different platform for better performance, pricing, or deployment flexibility.
+
+1. Push the repository to GitHub.
+2. Create a new Render service from the repository.
+3. Add the `GROQ_API_KEY` environment variable.
+4. Deploy the app.
+
+## Important Notes
+
+- This is the first version of the project.
+- The app is intentionally built for PDFs only.
+- Local storage is not meant to be treated as production-grade persistence.
+- On platforms like Render, uploaded PDFs and the Chroma index may be lost after a redeploy or restart unless persistent storage is configured.
+
+## Future Improvements
+
+Potential enhancements for later versions include:
+
+- support for additional file types beyond PDF
+- better chunking and retrieval tuning
+- user authentication and multi-user support
+- persistent cloud storage for uploaded documents
+- improved UI and analytics
+
+## Summary
+
+Lecture Chat is a simple but practical local PDF Q&A assistant for learning and document exploration. This first version focuses on reliability, simplicity, and PDF-based workflows so it can be run quickly in a local development or personal study environment.
