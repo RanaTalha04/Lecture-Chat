@@ -45,6 +45,7 @@ qdrant_storage/
 *.sqlite
 data/vectorstore/
 uploads/
+storage/
 
 # --- Local Caches & LLM Artifacts ---
 .cache/

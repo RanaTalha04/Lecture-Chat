@@ -19,7 +19,7 @@ from src.ingestion.loader import Loader
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "uploads"
-CHROMA_DIR = ROOT / "data" / "chroma"
+CHROMA_DIR = ROOT / "storage" / "chroma"
 # Changing embedding models requires a new collection; uploaded PDFs remain in
 # ``uploads/`` and can be rebuilt from the UI.
 COLLECTION_NAME = "uploaded_lecture_chunks_onnx"

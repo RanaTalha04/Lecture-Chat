@@ -9,7 +9,20 @@ Ask questions about PDFs you upload. The application splits PDFs into passages, 
 3. Start the application with `uv run python main.py`.
 4. Open http://localhost:8000. The first question downloads the embedding model and builds the search index, so it may take a little longer.
 
-The existing sample PDFs in `data/Directory/` are not used. From the UI, upload your own PDFs and choose **Rebuild search index** to include them. Uploaded files are stored locally in `uploads/`.
+From the UI, upload your own PDFs and choose **Rebuild search index** to include them. Uploaded files are stored locally in `uploads/`; the generated ChromaDB index is in `storage/`.
+
+## Project structure
+
+```text
+src/
+  api/          FastAPI app and HTTP routes
+  ingestion/    PDF loader
+  chunking/     Text splitter
+  rag/          Indexing, retrieval, and Groq answer generation
+static/         Browser frontend (HTML, CSS, JavaScript)
+uploads/        Your PDFs (local runtime data; not committed)
+storage/        Generated ChromaDB index (local runtime data; not committed)
+```
 
 ## API
 
