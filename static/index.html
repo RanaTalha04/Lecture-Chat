@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lecture Chat</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <p class="eyebrow">YOUR COURSE MATERIALS, SEARCHABLE</p>
+        <h1>Lecture Chat</h1>
+        <p class="subtitle">Ask questions about the lecture PDFs and inspect the passages behind every answer.</p>
+      </header>
+      <section class="panel" aria-label="Chat with lectures">
+        <div id="messages" class="messages" aria-live="polite">
+          <article class="message assistant">Hi! Ask a question about the uploaded lecture notes.</article>
+        </div>
+        <form id="chat-form" class="composer">
+          <label class="sr-only" for="question">Your question</label>
+          <textarea id="question" rows="2" placeholder="e.g. What is the difference between supervised and unsupervised learning?" required></textarea>
+          <button id="send" type="submit">Ask</button>
+        </form>
+      </section>
+      <section class="tools" aria-label="Document controls">
+        <form id="upload-form">
+          <label for="file">Add a lecture PDF</label>
+          <input id="file" type="file" accept="application/pdf" required />
+          <button type="submit">Upload</button>
+        </form>
+        <button id="reindex" type="button">Rebuild search index</button>
+        <p id="status">Checking library…</p>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
