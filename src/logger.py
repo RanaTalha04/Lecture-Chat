@@ -14,7 +14,7 @@ LOG_FILE_PATH = LOG_PATH / LOG_FILE
 
 
 logging.basicConfig(
-    filename=LOG_FILE_PATH,
     format="%(asctime)s | %(levelname)s | %(filename)s: %(lineno)d | %(message)s",
-    level=logging.INFO
+    level=logging.INFO,
+    handlers=[logging.FileHandler(LOG_FILE_PATH), logging.StreamHandler()],
 )

@@ -9,6 +9,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 from src.rag.service import DATA_DIR, RAGService
+from src.logger import logging
 
 router = APIRouter(prefix="/api", tags=["lecture-chat"])
 service = RAGService()
@@ -44,8 +45,17 @@ def reindex() -> dict:
 async def upload_document(file: UploadFile = File(...)) -> dict:
     if not file.filename or Path(file.filename).suffix.lower() != ".pdf":
         raise HTTPException(status_code=400, detail="Only PDF files can be uploaded.")
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    target = DATA_DIR / Path(file.filename).name
-    with target.open("wb") as output:
-        shutil.copyfileobj(file.file, output)
-    return {"message": f"Uploaded {target.name}. Reindex to include it in chat."}
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        target = DATA_DIR / Path(file.filename).name
+        with target.open("wb") as output:
+            shutil.copyfileobj(file.file, output)
+        return {"message": f"Uploaded {target.name}. Reindex to include it in chat."}
+    except OSError as exc:
+        logging.exception("Could not save uploaded PDF")
+        raise HTTPException(
+            status_code=500,
+            detail="The server could not save this file. Check the Render service logs.",
+        ) from exc
+    finally:
+        await file.close()
