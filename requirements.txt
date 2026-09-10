@@ -6,6 +6,7 @@ huggingface-hub
 pydantic==2.9.2
 python-dotenv>=1.0.1
 chromadb==0.5.18
+posthog==3.7.4
 langchain==0.3.7
 fastapi==0.115.0
 python-multipart==0.0.12
