@@ -9,17 +9,20 @@ from threading import Lock
 from typing import Any
 
 import chromadb
+from chromadb.config import Settings
+from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 from dotenv import load_dotenv
 from groq import Groq
 
 from src.chunking.chunker import Chunking
-from src.embeddings.embedder import Embedding
 from src.ingestion.loader import Loader
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "uploads"
 CHROMA_DIR = ROOT / "data" / "chroma"
-COLLECTION_NAME = "uploaded_lecture_chunks"
+# Changing embedding models requires a new collection; uploaded PDFs remain in
+# ``uploads/`` and can be rebuilt from the UI.
+COLLECTION_NAME = "uploaded_lecture_chunks_onnx"
 
 
 class RAGService:
@@ -27,18 +30,16 @@ class RAGService:
 
     def __init__(self) -> None:
         load_dotenv(ROOT / ".env")
-        self.client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-        self.collection = self.client.get_or_create_collection(
-            COLLECTION_NAME, metadata={"hnsw:space": "cosine"}
+        self.embedding_function = DefaultEmbeddingFunction()
+        self.client = chromadb.PersistentClient(
+            path=str(CHROMA_DIR), settings=Settings(anonymized_telemetry=False)
         )
-        self._embeddings = None
+        self.collection = self.client.get_or_create_collection(
+            COLLECTION_NAME,
+            metadata={"hnsw:space": "cosine"},
+            embedding_function=self.embedding_function,
+        )
         self._lock = Lock()
-
-    @property
-    def embeddings(self):
-        if self._embeddings is None:
-            self._embeddings = Embedding().get_embedding_model()
-        return self._embeddings
 
     def status(self) -> dict[str, int]:
         return {"documents": len(list(DATA_DIR.glob("*.pdf"))), "chunks": self.collection.count()}
@@ -53,7 +54,9 @@ class RAGService:
 
             self.client.delete_collection(COLLECTION_NAME)
             self.collection = self.client.get_or_create_collection(
-                COLLECTION_NAME, metadata={"hnsw:space": "cosine"}
+                COLLECTION_NAME,
+                metadata={"hnsw:space": "cosine"},
+                embedding_function=self.embedding_function,
             )
             for start in range(0, len(chunks), 100):
                 batch = chunks[start : start + 100]
@@ -67,7 +70,6 @@ class RAGService:
                     ids=ids,
                     documents=texts,
                     metadatas=metadata,
-                    embeddings=self.embeddings.embed_documents(texts),
                 )
             return self.status()
 
@@ -78,7 +80,7 @@ class RAGService:
             self.reindex()
 
         result = self.collection.query(
-            query_embeddings=[self.embeddings.embed_query(question)],
+            query_texts=[question],
             n_results=min(max(top_k, 1), self.collection.count()),
             include=["documents", "metadatas", "distances"],
         )

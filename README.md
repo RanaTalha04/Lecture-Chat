@@ -1,6 +1,6 @@
 # Lecture Chat
 
-Ask questions about PDFs you upload. The application splits PDFs into passages, embeds them locally with `all-MiniLM-L6-v2`, stores those vectors in ChromaDB, retrieves the best matches for a question, and asks Groq to write an answer grounded only in those passages. Each response includes the source text and page number.
+Ask questions about PDFs you upload. The application splits PDFs into passages, embeds them locally with ChromaDB's lightweight ONNX embedding model, stores the vectors in ChromaDB, retrieves the best matches for a question, and asks Groq to write an answer grounded only in those passages. Each response includes the source text and page number.
 
 ## Run locally
 
